@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Management;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using CommandLine;
 using CommandLine.Text;
@@ -27,6 +29,11 @@ namespace USB_Filler
 
                 Console.WriteLine("\nFound {0} drives to fill.\n", DrivesToCopyTo.Count);
 
+                if (options.Format)
+                {
+                    FormatingStuffInParallel(DrivesToCopyTo);
+                }
+
                 CopyStuffInParallel(DrivesToCopyTo, options.SourcePath);
 
                 if (!options.NoVerify)
@@ -40,9 +47,25 @@ namespace USB_Filler
         {
             Parallel.ForEach(drives, currentDrive =>
             {
-                Console.WriteLine("Copying {0}", currentDrive);
+                Console.WriteLine("Started copying to {0}", currentDrive);
                 DirectoryCopy(sourcePath, currentDrive, true);
-                Console.WriteLine("Finished {0}", currentDrive);
+                Console.WriteLine("Copying finished on {0}", currentDrive);
+            });
+        }
+
+        private static void FormatingStuffInParallel(List<string> drives)
+        {
+            Parallel.ForEach(drives, currentDrive =>
+            {
+                Console.WriteLine("Started formating {0}", currentDrive);
+                if (FormatDrive(currentDrive))
+                {
+                    Console.WriteLine("Formating done {0}", currentDrive);
+                }
+                else
+                {
+                    Console.WriteLine("Formating failed {0}", currentDrive);
+                }
             });
         }
 
@@ -158,7 +181,55 @@ namespace USB_Filler
                 }
             }
         }
+
+        public static bool FormatDrive(string driveLetter, string fileSystem = "NTFS", bool quickFormat = true, int clusterSize = 8192, string label = "", bool enableCompression = false)
+        {
+            driveLetter = driveLetter[0].ToString();
+
+            if (driveLetter.Length != 1 || !char.IsLetter(driveLetter[0]) || driveLetter.Equals("c") || driveLetter.Equals("C"))
+                return false;
+
+            if (!IsUserAdministrator())
+            {
+                Console.WriteLine("Error: Must have administrative privileges to format drive!");
+                return false;
+            }
+
+            //query and format given drive         
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher(@"select * from Win32_Volume WHERE DriveLetter = '" + driveLetter + ":'");
+            foreach (var o in searcher.Get())
+            {
+                var vi = (ManagementObject) o;
+                vi.InvokeMethod("Format", new object[] { fileSystem, quickFormat, clusterSize, label, enableCompression });
+            }
+
+            return true;
+        }
+
+        public static bool IsUserAdministrator()
+        {
+            //bool value to hold our return value
+            bool isAdmin;
+            try
+            {
+                //get the currently logged in user
+                WindowsIdentity user = WindowsIdentity.GetCurrent();
+                WindowsPrincipal principal = new WindowsPrincipal(user);
+                isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                isAdmin = false;
+            }
+            catch (Exception ex)
+            {
+                isAdmin = false;
+            }
+            return isAdmin;
+        }
     }
+
+
 
     internal class Options
     {
@@ -171,10 +242,13 @@ namespace USB_Filler
         [Option('n', "no-verify", DefaultValue = false, HelpText = "Skips verification of the target drives.")]
         public bool NoVerify { get; set; }
 
+        [Option('f', "format", DefaultValue = false, HelpText = "Format target drive before copying (must have admin privileges).")]
+        public bool Format { get; set; }
+
         [HelpOption]
         public string GetUsage()
         {
-            return HelpText.AutoBuild(this, (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+            return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
         }
     }
 }
