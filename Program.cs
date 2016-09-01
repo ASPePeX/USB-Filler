@@ -194,7 +194,7 @@ namespace USB_Filler
 
         private static Dictionary<string, string> PathMd5(string path)
         {
-            List<string> fileList = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).ToList();
+            List<string> fileList = GetFiles(path);
             Dictionary<string, string> fileXmd5 = new Dictionary<string, string>();
 
             Parallel.ForEach(fileList, file =>
@@ -245,6 +245,32 @@ namespace USB_Filler
             return true;
         }
 
+        // MEH "System Volume Information" crap about Directory.GetFiles
+        static List<string> GetFiles(string folder)
+        {
+            List<string> files = new List<string>();
+
+            foreach (string file in Directory.GetFiles(folder))
+            {
+                files.Add(file);
+            }
+            foreach (string subDir in Directory.GetDirectories(folder))
+            {
+                if (!subDir.Contains("System Volume Information"))
+                {
+                    try
+                    {
+                        GetFiles(subDir);
+                    }
+                    catch
+                    {
+                        // swallow, log, whatever
+                    }
+                }
+            }
+            return files;
+        }
+
         public static bool IsUserAdministrator()
         {
             //bool value to hold our return value
@@ -256,11 +282,7 @@ namespace USB_Filler
                 WindowsPrincipal principal = new WindowsPrincipal(user);
                 isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                isAdmin = false;
-            }
-            catch (Exception ex)
+            catch
             {
                 isAdmin = false;
             }
