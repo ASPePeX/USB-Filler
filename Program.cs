@@ -20,27 +20,54 @@ namespace USB_Filler
             Options options = new Options();
             if (Parser.Default.ParseArguments(args, options))
             {
-                foreach (var drive in options.CopyToDrives)
+                if (options.Repeat)
                 {
-                    var drivePath = drive.ToString() + ":\\";
-                    if (Directory.Exists(drivePath))
-                        DrivesToCopyTo.Add(drivePath);
+                    Console.WriteLine("Starting in continuous mode.");
+                    do
+                    {
+                        MainLoop(options);
+                        Console.WriteLine("\nHit Enter for another run, Ctrl+C to exit.\n");
+                        Console.ReadKey();
+                    } while (options.Repeat);
                 }
-
-                Console.WriteLine("\nFound {0} drives to fill.\n", DrivesToCopyTo.Count);
-
-                if (options.Format)
+                else
                 {
-                    FormatingStuffInParallel(DrivesToCopyTo);
-                }
-
-                CopyStuffInParallel(DrivesToCopyTo, options.SourcePath);
-
-                if (!options.NoVerify)
-                {
-                    CalcMd5(DrivesToCopyTo, options.SourcePath);
+                    MainLoop(options);
                 }
             }
+        }
+
+        private static void MainLoop(Options options)
+        {
+
+            if (options.Drives != 0)
+            {
+                Console.WriteLine("Expecting {0} drives to be available.", options.Drives);
+                do
+                {
+                    CheckForDrives(options.CopyToDrives);
+                    Console.WriteLine("Found {0} drives to fill.", DrivesToCopyTo.Count);
+                    System.Threading.Thread.Sleep(3000);
+                } while (options.Drives != DrivesToCopyTo.Count);
+            }
+            else
+            {
+                CheckForDrives(options.CopyToDrives);
+                Console.WriteLine("Found {0} drives to fill.", DrivesToCopyTo.Count);
+            }
+
+            if (options.Format)
+            {
+                FormatingStuffInParallel(DrivesToCopyTo);
+            }
+
+            CopyStuffInParallel(DrivesToCopyTo, options.SourcePath);
+
+            if (!options.NoVerify)
+            {
+                CalcMd5(DrivesToCopyTo, options.SourcePath);
+            }
+
         }
 
         private static void CopyStuffInParallel(List<string> drives, string sourcePath)
@@ -51,6 +78,18 @@ namespace USB_Filler
                 DirectoryCopy(sourcePath, currentDrive, true);
                 Console.WriteLine("Copying finished on {0}", currentDrive);
             });
+        }
+
+        private static void CheckForDrives(string optionsdrives)
+        {
+            DrivesToCopyTo.Clear();
+
+            foreach (char drive in optionsdrives)
+            {
+                var drivePath = drive.ToString() + ":\\";
+                if (Directory.Exists(drivePath))
+                    DrivesToCopyTo.Add(drivePath);
+            }
         }
 
         private static void FormatingStuffInParallel(List<string> drives)
@@ -242,8 +281,14 @@ namespace USB_Filler
         [Option('n', "no-verify", DefaultValue = false, HelpText = "Skips verification of the target drives.")]
         public bool NoVerify { get; set; }
 
+        [Option('d', "Drives", DefaultValue = 0, HelpText = "Number of expected Drives.")]
+        public int Drives { get; set; }
+
         [Option('f', "format", DefaultValue = false, HelpText = "Format target drive before copying (must have admin privileges).")]
         public bool Format { get; set; }
+
+        [Option('r', "repeat", DefaultValue = false, HelpText = "Repeat continuously.")]
+        public bool Repeat { get; set; }
 
         [HelpOption]
         public string GetUsage()
