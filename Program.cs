@@ -32,6 +32,11 @@ namespace USB_Filler
 
                         Console.WriteLine("\nThis was run {0} with {1} drives each, you should be at {2} drives total.\n", _repeatCounter, options.Drives, _repeatCounter*options.Drives);
                         Console.WriteLine("\nHit Enter for another run, Ctrl+C to exit.\n");
+
+                        while (Console.KeyAvailable)
+                        {
+                            Console.ReadKey(false);
+                        }
                         Console.ReadKey();
                     } while (options.Repeat);
                 }
