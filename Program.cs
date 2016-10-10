@@ -17,7 +17,6 @@ namespace USB_Filler
 
         private static void Main(string[] args)
         {
-            Console.WriteLine("USB-Filler {0}", typeof(Program).Assembly.GetName().Version);
             Options options = new Options();
             if (Parser.Default.ParseArguments(args, options))
             {
