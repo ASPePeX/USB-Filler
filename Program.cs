@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Management;
 using System.Security.Cryptography;
@@ -10,10 +11,10 @@ using CommandLine.Text;
 
 namespace USB_Filler
 {
-    internal class Program
+    internal static class Program
     {
         private static readonly List<string> DrivesToCopyTo = new List<string>();
-        private static int _repeatCounter = 0;
+        private static int _repeatCounter;
 
         private static void Main(string[] args)
         {
@@ -101,22 +102,16 @@ namespace USB_Filler
             }
         }
 
-        private static void FormatingStuffInParallel(List<string> drives)
+        private static void FormatingStuffInParallel(IEnumerable<string> drives)
         {
             Parallel.ForEach(drives, currentDrive =>
             {
-                Console.WriteLine("Started formating {0}", currentDrive);
-                if (FormatDrive(currentDrive))
-                {
-                    Console.WriteLine("Formating done {0}", currentDrive);
-                }
-                else
-                {
-                    Console.WriteLine("Formating failed {0}", currentDrive);
-                }
+                Console.WriteLine($"Started formating {currentDrive}");
+                Console.WriteLine(FormatDrive(currentDrive)
+                    ? $"Formating done {currentDrive}"
+                    : $"Formating failed {currentDrive}");
             });
         }
-
 
         //
         // Shamelessly taken from https://msdn.microsoft.com/de-de/library/bb762914%28v=vs.110%29.aspx
@@ -164,7 +159,7 @@ namespace USB_Filler
 
             Parallel.ForEach(drives, drive =>
             {
-                Console.WriteLine("MD5 Check: " + drive);
+                Console.WriteLine($"MD5 Check: {drive}");
                 Dictionary<string, string> targetMd5 = PathMd5(drive);
                 var targetFiles = new List<string>(targetMd5.Keys);
 
@@ -191,11 +186,11 @@ namespace USB_Filler
 
                 if (forwardCheck && md5Check)
                 {
-                    Console.WriteLine("MD5 is good on: " + drive);
+                    Console.WriteLine($"MD5 is good on: {drive}");
                 }
                 else
                 {
-                    Console.WriteLine("Something is fucked up on: " + drive);
+                    Console.WriteLine($"Something is fucked up on: {drive}");
                     Console.ReadKey();
                 }
             });
@@ -230,7 +225,7 @@ namespace USB_Filler
             }
         }
 
-        public static bool FormatDrive(string driveLetter, string fileSystem = "NTFS", bool quickFormat = true, int clusterSize = 8192, string label = "", bool enableCompression = false)
+        private static bool FormatDrive(string driveLetter, string fileSystem = "NTFS", bool quickFormat = true, int clusterSize = 8192, string label = "", bool enableCompression = false)
         {
             driveLetter = driveLetter[0].ToString();
 
@@ -280,7 +275,7 @@ namespace USB_Filler
             return files;
         }
 
-        public static bool IsUserAdministrator()
+        private static bool IsUserAdministrator()
         {
             //bool value to hold our return value
             bool isAdmin;
@@ -300,7 +295,7 @@ namespace USB_Filler
     }
 
 
-
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     internal class Options
     {
         [Option('s', "source", Required = true, HelpText = "Input path to be processed.")]
