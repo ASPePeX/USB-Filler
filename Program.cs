@@ -27,6 +27,11 @@ namespace USB_Filler
                     {
                         MainLoop(options);
                         Console.WriteLine("\nHit Enter for another run, Ctrl+C to exit.\n");
+
+                        while (Console.KeyAvailable)
+                        {
+                            Console.ReadKey(false);
+                        }
                         Console.ReadKey();
                     } while (options.Repeat);
                 }
