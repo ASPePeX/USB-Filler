@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Management;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -18,6 +17,7 @@ namespace USB_Filler
 
         private static void Main(string[] args)
         {
+            Console.WriteLine("USB-Filler {0}", typeof(Program).Assembly.GetName().Version);
             Options options = new Options();
             if (Parser.Default.ParseArguments(args, options))
             {
