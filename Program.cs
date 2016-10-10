@@ -14,6 +14,7 @@ namespace USB_Filler
     internal class Program
     {
         private static readonly List<string> DrivesToCopyTo = new List<string>();
+        private static int _repeatCounter = 0;
 
         private static void Main(string[] args)
         {
@@ -26,6 +27,10 @@ namespace USB_Filler
                     do
                     {
                         MainLoop(options);
+
+                        _repeatCounter++;
+
+                        Console.WriteLine("\nThis was run {0} with {1} drives each, you should be at {2} drives total.\n", _repeatCounter, options.Drives, _repeatCounter*options.Drives);
                         Console.WriteLine("\nHit Enter for another run, Ctrl+C to exit.\n");
                         Console.ReadKey();
                     } while (options.Repeat);
