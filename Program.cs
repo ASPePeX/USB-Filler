@@ -15,6 +15,7 @@ namespace USB_Filler
     {
         private static readonly List<string> DrivesToCopyTo = new List<string>();
         private static int _repeatCounter;
+        private static int _driveDiffCounter;
 
         private static void Main(string[] args)
         {
@@ -24,13 +25,17 @@ namespace USB_Filler
                 if (options.Repeat)
                 {
                     Console.WriteLine("Starting in continuous mode.");
+                    Console.WriteLine("Copying will start automatically when the expected number of drives are plugged in.");
+                    Console.WriteLine("Hit any key to force copying with less drives connected.\n");
                     do
                     {
                         MainLoop(options);
 
                         _repeatCounter++;
 
-                        Console.WriteLine("\nThis was run {0} with {1} drives each, you should be at {2} drives total.\n", _repeatCounter, options.Drives, _repeatCounter*options.Drives);
+                        Console.WriteLine("\nThis was run {0} with {1} drives each.", _repeatCounter, options.Drives);
+                        if (_driveDiffCounter != 0) { Console.WriteLine("You skipped copying for {0} drives.", _driveDiffCounter);}
+                        Console.WriteLine("You should be at {0} drives total.", _repeatCounter*options.Drives - _driveDiffCounter);
                         Console.WriteLine("\nHit Enter for another run, Ctrl+C to exit.\n");
 
                         while (Console.KeyAvailable)
@@ -49,16 +54,29 @@ namespace USB_Filler
 
         private static void MainLoop(Options options)
         {
+            if (Console.KeyAvailable)
+            {
+                Console.ReadKey(false);
+            }
 
             if (options.Drives != 0)
             {
                 Console.WriteLine("Expecting {0} drives to be plugged in.", options.Drives);
+
+                bool forceskip = false;
+
                 do
                 {
                     CheckForDrives(options.CopyToDrives);
                     Console.WriteLine("Found {0} drives to fill.", DrivesToCopyTo.Count);
                     System.Threading.Thread.Sleep(3000);
-                } while (options.Drives != DrivesToCopyTo.Count);
+
+                    if (Console.KeyAvailable)
+                    {
+                        forceskip = true;
+                        Console.ReadKey(false);
+                    }
+                } while (options.Drives != DrivesToCopyTo.Count && !forceskip);
             }
             else
             {
@@ -70,6 +88,8 @@ namespace USB_Filler
             {
                 FormatingStuffInParallel(DrivesToCopyTo);
             }
+
+            _driveDiffCounter += options.Drives - DrivesToCopyTo.Count;
 
             CopyStuffInParallel(DrivesToCopyTo, options.SourcePath);
 
