@@ -52,7 +52,7 @@ namespace USB_Filler
 
             if (options.Drives != 0)
             {
-                Console.WriteLine("Expecting {0} drives to be available.", options.Drives);
+                Console.WriteLine("Expecting {0} drives to be plugged in.", options.Drives);
                 do
                 {
                     CheckForDrives(options.CopyToDrives);
@@ -307,7 +307,7 @@ namespace USB_Filler
         [Option('n', "no-verify", DefaultValue = false, HelpText = "Skips verification of the target drives.")]
         public bool NoVerify { get; set; }
 
-        [Option('d', "Drives", DefaultValue = 0, HelpText = "Number of expected Drives.")]
+        [Option('d', "Drives", DefaultValue = 0, HelpText = "Number of simultaneously plugged in drives.")]
         public int Drives { get; set; }
 
         [Option('f', "format", DefaultValue = false, HelpText = "Format target drive before copying (must have admin privileges).")]
@@ -317,6 +317,7 @@ namespace USB_Filler
         public bool Repeat { get; set; }
 
         [HelpOption]
+        // ReSharper disable once UnusedMember.Global
         public string GetUsage()
         {
             return HelpText.AutoBuild(this, current => HelpText.DefaultParsingErrorsHandler(this, current));
